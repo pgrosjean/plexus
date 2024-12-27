@@ -1,0 +1,47 @@
+# Configuration for Hydra
+hydra:
+  run:
+    dir: /tmp/hydra
+  job:
+    chdir: false
+
+defaults:
+  - data_config: simulation_2_16cell_dataset
+  - _self_
+
+train_config:
+  _target_: geci_learn.ssl_training.utils.train_utils.TrainConfig
+  batch_size: 5
+  learning_rate: 0.5e-3
+  max_epoch_number: 1000
+  warmup_epochs: 15
+  num_workers: 16
+  log_steps: 2
+  checkpoint_every_n_epochs: 20
+  precision: 32
+  profiler: simple
+  gpu_num: 1
+
+lr_config:
+  _target_: geci_learn.ssl_training.utils.scheduler.HyperParameterScheduler
+  train_config: ${train_config}
+  base_value: 0.5e-4
+  final_value: 1e-6
+  warmup_initial_value: 1e-5
+  warmup_epochs: ${train_config.warmup_epochs}
+
+wandb_config:
+  _target_: geci_learn.ssl_training.utils.train_utils.WandbRunConfig
+  project: Network_MAE
+  run_name: simulation2_16cell_d2weights_pi
+
+model_config:
+  _target_: geci_learn.ssl_training.models.updated_network_mae.NetworkMAE
+  lr_scheduler: ${lr_config}
+  time_window: 24  # Note: time_window * num_patches must be equal to the signal length
+  num_patches: 100  # Per cell
+  num_register_tokens: 5
+  num_channels: ${data_config.num_cells}  # number of cells per network
+  mask_percentage: 0.5
+  random_init: False
+  permutation_invariant: True
