@@ -47,7 +47,7 @@ If you are running from another location you will need to change the paths to ma
 
 ### CRISRPi Screen Plexus Model Inference
 ```bash
-plexus-inference --config crispri_screen_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/crispri_screen/split_zarr_files/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/crispri_screen/FULL_SCREEN_DATASET_STATS_DICT.json --only_nuclei_positive
+plexus-inference --config crispri_screen_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/crispri_screen/split_zarr_files/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/crispri_screen/CRISPRI_SCREEN_DATASET_STATS_DICT.json --only_nuclei_positive
 ```
 ### Neuroactive Stimulation Plexus Model Inference
 ```bash
