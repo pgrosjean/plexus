@@ -1,3 +1,4 @@
+from typing import Union
 import os
 import pandas as pd
 import numpy as np
@@ -8,11 +9,12 @@ from pathlib import Path
 from tqdm import tqdm
 import json
 from plexus.ssl_inference.utils.inference_data_utils import generate_inference_dataset
-from plexus.ssl_inference.utils.model_load import load_model_from_wandb_for_inference
+from plexus.ssl_inference.utils.model_load import load_model_from_wandb_for_inference, load_model_from_checkpoint
 
 
 def main():
     argparser = ArgumentParser()
+    argparser.add_argument("--checkpoint_path", type=Union[str, None], default=None, help="Path to the model checkpoint.")
     argparser.add_argument("--wandb_entity", type=str, help="WandB entity where the model is stored.")
     argparser.add_argument("--wandb_uid", type=str, help="WandB unique identifier for the model.")
     argparser.add_argument("--zarr_path", type=str, help="Path to the Zarr file.")
@@ -43,8 +45,10 @@ def main():
 
     with hydra.initialize(version_base=None, config_path=str(relative_path)):
         config = hydra.compose(config_name=str(args.config))
-    
-    model = load_model_from_wandb_for_inference(config, args.wandb_entity, args.wandb_uid)
+    if args.checkpoint_path is not None:
+        model = load_model_from_checkpoint(args.checkpoint_path)
+    else:
+        model = load_model_from_wandb_for_inference(config, args.wandb_entity, args.wandb_uid)
     num_cells = config.model_config.num_channels
     inference_dataset = generate_inference_dataset(zarr_path=args.zarr_path,
                                                    num_cells=num_cells,

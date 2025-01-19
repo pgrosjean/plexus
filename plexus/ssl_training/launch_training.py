@@ -10,12 +10,6 @@ import hydra
 
 
 # Setting up the environment for CUDA
-os.environ["WANDB_DIR"] = "/scratch/pgrosjean/wandb/"
-os.environ["WANDB_ARTIFACT_DIR"] = "/scratch/pgrosjean/wandb/artifacts/"
-os.environ["WANDB_CACHE_DIR"] = "/scratch/pgrosjean/wandb/cache/"
-os.environ["WANDB_DATA_DIR"] = "/scratch/pgrosjean/wandb/data/"
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-
 def main():
     # Seeding everything to ensure reproducibility
     pl.seed_everything(1)
@@ -26,7 +20,7 @@ def main():
         description=desc, formatter_class=ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("--config", type=Path, help="config file name without .yaml extension")
-    parser.add_argument("--log_dir", default="/scratch/pgrosjean/wandb/" , type=Path, help="Directory to save logs")
+    parser.add_argument("--log_dir", default="./wandb/" , type=Path, help="Directory to save logs")
     args = parser.parse_args()
     config_path = Path(__file__).parent / "config"
     

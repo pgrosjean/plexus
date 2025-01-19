@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "plexus"
 version = "0.0.1"
-description = "Plexus --> a SSL method for neuronal activity phenotypic profiling."
+description = "Plexus - a SSL method for neuronal activity phenotypic profiling."
 authors = [
     { name = "Parker Grosjean", email = "parker.grosjean@gmail.com" }
 ]
@@ -14,7 +14,6 @@ urls = { "Homepage" = "https://github.com/pgrosjean/plexus" }
 readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
 dependencies = [
-    "cellpose>=3.0.7",
     "matplotlib>=3.8.0",
     "seaborn>=0.13.2",
     "tqdm>=4.66.1",

@@ -74,3 +74,28 @@ def load_model_from_wandb_for_inference(config,
     model.mask_percentage = 0
     model.eval()
     return model
+
+
+def load_model_from_checkpoint(checkpoint_path,
+                               config):
+    """
+    Load a model from a checkpoint.
+
+    Parameters
+    ----------
+    checkpoint_path : str
+        The path to the checkpoint file.
+    config : OmegaConf Dict
+        The configuration for the model.
+    
+    Returns
+    -------
+    torch.nn.Module
+        The loaded model.
+    """
+    model = hydra.utils.instantiate(config.model_config)
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    model.load_state_dict(checkpoint["state_dict"])
+    model.mask_percentage = 0
+    model.eval()
+    return model
