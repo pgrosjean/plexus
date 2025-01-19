@@ -7,20 +7,22 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
 import zarr
+from pathlib import Path
 
 # Plexus Imports
 from plexus.ssl_training.utils.train_utils import TrainConfig
 
 # Constants
 # CHANGE THIS BASE PATH TO THE LOCATION OF THE DATASETS ON YOUR SYSTEM  P
-BASE_PATH = '/home/plexus_datasets/'
+# setting base path to the location of this file
+BASE_PATH = Path(__file__).parent / "../../plexus_data_archive/processed_zarr_files/"
 
-NEUROACTIVE_ZARR_PATH = f"{BASE_PATH}/neuroactive_stimulation/zarr_files/"
+NEUROACTIVE_ZARR_PATH = f"{BASE_PATH}/neuroactive_stimulation/processed_zarr_files/"
 NEUROACTIVE_DATASET_NO_SPLIT_STATS_DICT = {"d14_delta": (0.036551, 0.027913),
                                   "d17_delta": (0.051059, 0.041993),
                                   "d21_delta": (0.083181, 0.092586)}
 
-NEUROACTIVE_ZARR_PATH = f"{BASE_PATH}/neuroactive_stimulation/zarr_files_split/"
+NEUROACTIVE_ZARR_PATH = f"{BASE_PATH}/neuroactive_stimulation/split_zarr_files/"
 NEUROACTIVE_DATASET_STATS_DICT = {"d14_delta_first_half_signal": (0.036551, 0.027913),
                                   "d14_delta_second_half_signal": (0.036551, 0.027913),
                                   "d17_delta_first_half_signal": (0.051059, 0.041993),
@@ -28,8 +30,8 @@ NEUROACTIVE_DATASET_STATS_DICT = {"d14_delta_first_half_signal": (0.036551, 0.02
                                   "d21_delta_first_half_signal": (0.083181, 0.092586),
                                   "d21_delta_second_half_signal": (0.083181, 0.092586)}
 
-FULL_DFF_GCAMP_ZARR_PATH = f"{BASE_PATH}/full_screen/zarr_files_split/"
-SIMULATION_2_ZARR_PATH = f"{BASE_PATH}/simulation/zarr_files/"
+FULL_DFF_GCAMP_ZARR_PATH = f"{BASE_PATH}/crispri_screen/split_zarr_files/"
+SIMULATION_2_ZARR_PATH = f"{BASE_PATH}/simulation/"
 
 D14_DFF_DATASET_STATS_DICT = {"Plate1_A1_delta_first_half_signal": (0.094651, 0.093178),
                               "Plate1_A1_delta_second_half_signal": (0.094651, 0.093178),
@@ -256,7 +258,7 @@ def generate_dataloader(train_config: TrainConfig,
 
 ################################################################################
 ################################################################################
-## Neuroactive Compound Data Module
+## Neuroactive Compound Stimulation Data Module
 ################################################################################
 ################################################################################
 
@@ -312,7 +314,7 @@ class NeuroactiveCompoundDataModule(pl.LightningDataModule):
 
 ################################################################################
 ################################################################################
-## Full GCaMP Screen (D14 + D21) 4 cell line Data Module
+## Full GCaMP Screen 4x cell-line Data Module
 ################################################################################
 ################################################################################
 
