@@ -5,7 +5,7 @@ import zarr
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks, peak_widths
 from scipy.stats import entropy
-
+from tqdm import tqdm
 
 def get_zarr_info(zarr_location: str):
     """
