@@ -14,7 +14,7 @@ pip install -e .
 All training and inference requires at least one NVIDIA GPU with at least 24 Gb memory
 
 # Downloading the datasets for training the models
-To train the models you must first download the Datasets (zarr files) from Zenodo
+To train the models you must first download the data archive from Zenodo
 ```bash
 wget https://zenodo.org/record/1234567/files/plexus_data_archive.gz
 gunzip plexus_data_archive.gz
