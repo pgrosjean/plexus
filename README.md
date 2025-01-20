@@ -1,5 +1,7 @@
 # Plexus
 **Overview**: Network-Aware Masked Autoencoders for Neuronal Activity Phenotyping
+<img width="813" alt="image" src="https://github.com/user-attachments/assets/7558784b-bb7e-4fc8-b331-2d6a8f3b5d4c" />
+
 
 # Installation
 ```bash
