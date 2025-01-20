@@ -45,8 +45,10 @@ plexus-train --config simulation_8cell --log_dir ./logging/
 ```
 
 # Running inference for models
-When running inference this assumes you have properly downloaded the dataset archive folder and are in the base path of the plexus repository
-If you are running from another location you will need to change the paths to match your working directory. 
+When running inference this assumes you have properly downloaded the dataset archive folder and are in the base path of the plexus repository.
+
+If you are running from another location you will need to change the paths to match your working directory.
+
 Running inference generates parquet files with the embeddings infromation and plate and well information.
 
 
