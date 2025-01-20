@@ -101,9 +101,15 @@ def main():
     if save_path[-1] == "/":
         save_path = save_path[:-1]
     if network_average:
-        embeddings_df.to_parquet(f"{save_path}/MAE_embeddings_{args.wandb_uid}_{num_cells}_cells_network_average.parquet")
+        if args.checkpoint_path is None:
+            embeddings_df.to_parquet(f"{save_path}/Embeddings_{args.wandb_uid}_{num_cells}_cells_network_average.parquet")
+        else:
+            embeddings_df.to_parquet(f"{save_path}/Embeddings_from_checkpoint_{num_cells}_cells_network_average.parquet")
     else:
-        embeddings_df.to_parquet(f"{save_path}/MAE_embeddings_{args.wandb_uid}_{num_cells}_cells.parquet")
+        if args.checkpoint_path is None:
+            embeddings_df.to_parquet(f"{save_path}/Embeddings_{args.wandb_uid}_{num_cells}_cells.parquet")
+        else:
+            embeddings_df.to_parquet(f"{save_path}/Embeddings_from_checkpoint_{num_cells}_cells.parquet")
 
 
 if __name__ == "__main__":
