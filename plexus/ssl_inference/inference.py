@@ -46,7 +46,7 @@ def main():
     with hydra.initialize(version_base=None, config_path=str(relative_path)):
         config = hydra.compose(config_name=str(args.config))
     if args.checkpoint_path != "none":
-        model = load_model_from_checkpoint(args.checkpoint_path)
+        model = load_model_from_checkpoint(args.checkpoint_path, config)
     else:
         model = load_model_from_wandb_for_inference(config, args.wandb_entity, args.wandb_uid)
     num_cells = config.model_config.num_channels
