@@ -71,5 +71,5 @@ plexus-inference --config neuroactive_8cell --zarr_path ./plexus_data_archive/pr
 
 ### Simulation Plexus Model Inference
 ```bash
-plexus-inference --config simulation_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/simulation/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/simulation/SIMULATION_STATS_DICT.json --save_path ./simulation_embedding_parquet_files/ --checkpoint_path ./plexus_data_archive/model_checkpoints/simulation/model-pux163n0:v1/model.ckpt
+plexus-inference --config simulation_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/simulation/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/simulation/SIMULATION_STATS_DICT.json --save_path ./simulation_embedding_parquet_files/ --checkpoint_path ./plexus_data_archive/model_checkpoints/simulation/model-1s3n8lon:v1/model.ckpt
 ```
