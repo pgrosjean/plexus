@@ -64,11 +64,6 @@ plexus-inference --config crispri_screen_8cell --zarr_path ./plexus_data_archive
 plexus-inference --config crispri_screen_1cell --zarr_path ./plexus_data_archive/processed_zarr_files/crispri_screen/split_zarr_files/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/crispri_screen/CRISPRI_SCREEN_DATASET_STATS_DICT.json --only_nuclei_positive --save_path ./crispri_screen_embedding_parquet_files/ --checkpoint_path ./plexus_data_archive/model_checkpoints/crispri_screen/crispri_screen_1cell/model-gmzj27s2:v1/model.ckpt
 ```
 
-### Neuroactive Stimulation Plexus Model Inference
-```bash
-plexus-inference --config neuroactive_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/neuroactive_stimulation/split_zarr_files/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/neuroactive_stimulation/NEUROACTIVE_DATASET_STATS_DICT.json --save_path ./neuroactive_stimulation_embedding_parquet_files/ --checkpoint_path ./plexus_data_archive/model_checkpoints/neuroactive_stimulation/neuroactive_8cell/model-tnaeqqi2:v1/model.ckpt
-```
-
 ### Simulation Plexus Model Inference
 ```bash
 plexus-inference --config simulation_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/simulation/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/simulation/SIMULATION_STATS_DICT.json --save_path ./simulation_embedding_parquet_files/ --checkpoint_path ./plexus_data_archive/model_checkpoints/simulation/model-1s3n8lon:v1/model.ckpt
