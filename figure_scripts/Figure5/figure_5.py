@@ -377,7 +377,7 @@ def main():
     grouped_adata_wt_patient_sc = adata_wt_patient_sc
 
     # Reading in the manual features
-    param_adata = ad.read_h5ad('') ## CHANGE
+    param_adata = ad.read_h5ad('../../plexus_data_archive/plexus_embeddings/crispri_screen/crispri_screen_manual_features.h5ad')
     scaler = StandardScaler()
     param_adata.X = scaler.fit_transform(param_adata.X)
     param_adata.obs['mapping_id'] = param_adata.obs['zarr_file'].astype(str) + '-' + param_adata.obs['well_id'].apply(lambda x: x[-3:]).astype(str) + '-' + param_adata.obs['fov_id'].astype(str) + '-' + param_adata.obs['fov_cell_idx'].astype(str)
