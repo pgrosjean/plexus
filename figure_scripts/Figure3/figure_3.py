@@ -66,7 +66,9 @@ def main():
     adata_stimulation_wt = adata_stimulation[adata_stimulation.obs["cell_line"] == "WTC11-WT-Tau"]
     adata_stimulation_wt.obs['location_id'] = adata_stimulation_wt.obs['for_aggregation'].apply(lambda x: '-'.join(x.split('-')[:-2]))
     standard_scaler = StandardScaler()
-    adata_x_scaled_wt = standard_scaler.fit_transform(adata_stimulation_wt.X)
+    X = adata_stimulation_wt.X
+    X = np.nan_to_num(X, nan=-1)
+    adata_x_scaled_wt = standard_scaler.fit_transform(X)
     adata_stimulation_wt.X = adata_x_scaled_wt
     X_dict = {}
     y_dict = {}
