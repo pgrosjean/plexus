@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import anndata as ad
+import seaborn as sns
 
 
 def plot_and_save_timeseries(gcamp_signal: np.ndarray,
@@ -62,6 +64,33 @@ def main():
     sampling_freq = 25
     plot_and_save_timeseries(dmso_traces, trace_color, sampling_freq, 'figure_1f_dmso')
     plot_and_save_timeseries(tent_traces, trace_color, sampling_freq, 'figure_1f_tent')
+
+
+    adata_dmso = ad.read_h5ad('/srv/home/pgrosjean/plexus/figure_scripts/Figure1/DMSO_traces.h5ad')
+    adata_tent = ad.read_h5ad('/srv/home/pgrosjean/plexus/figure_scripts/Figure1/TeNT_traces.h5ad')
+
+    correlation_coeffs = []
+    treatments = []
+    for rep in adata_dmso.obs['replicate'].unique():
+        dmso_rep = adata_dmso[adata_dmso.obs['replicate'] == rep]
+        corr = np.mean(np.corrcoef(dmso_rep.X, dmso_rep.X))
+        correlation_coeffs.append(corr)
+        treatments.append('DMSO')
+
+    for rep in adata_tent.obs['replicate'].unique():
+        tent_rep = adata_tent[adata_tent.obs['replicate'] == rep]
+        corr = np.mean(np.corrcoef(tent_rep.X, tent_rep.X))
+        correlation_coeffs.append(corr)
+        treatments.append('TeNT')
+
+    corr_df = pd.DataFrame({'Correlation Coefficient': correlation_coeffs, 'Treatment': treatments})
+    plt.figure(figsize=(7, 5))
+    sns.violinplot(x='Treatment', y='Correlation Coefficient', data=corr_df, color=trace_color)
+    sns.swarmplot(x='Treatment', y='Correlation Coefficient', data=corr_df, color='k', size=3)
+    plt.ylabel('Field of view Correlation Coefficient')
+    plt.tight_layout()
+    plt.savefig('figure_1g_correlation_plot.pdf', format='pdf', dpi=800)
+    plt.show()
 
 
 if __name__ == "__main__":

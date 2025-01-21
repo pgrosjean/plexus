@@ -62,7 +62,7 @@ def main():
                              '#d67c0d',
                              '#7c4fd6'])
     hue_order = ['Negative Control', '2 mM Ca2+', '2 mM Mg2+','TeNT', 'TTX']
-    adata_stimulation = ad.read_h5ad("../../plexus_embeddings/neuroactive_stimulation/neuroactive_stimulation_manual_features.h5ad")
+    adata_stimulation = ad.read_h5ad("../../plexus_data_archive/plexus_embeddings/neuroactive_stimulation/neuroactive_stimulation_manual_features.h5ad")
     adata_stimulation_wt = adata_stimulation[adata_stimulation.obs["cell_line"] == "WTC11-WT-Tau"]
     adata_stimulation_wt.obs['location_id'] = adata_stimulation_wt.obs['for_aggregation'].apply(lambda x: '-'.join(x.split('-')[:-2]))
     standard_scaler = StandardScaler()
@@ -84,7 +84,7 @@ def main():
     plt.savefig('roc_curves_neuroactive_stimulation_manual_features.pdf', dpi=800)
     plt.show()
 
-    adata_stim_embed = ad.read_h5ad("../../plexus_embeddings/neuroactive_stimulation/neuroactive_stimulation_plexus_embeddings.h5ad")
+    adata_stim_embed = ad.read_h5ad("../../plexus_data_archive/plexus_embeddings/neuroactive_stimulation/neuroactive_stimulation_plexus_embeddings.h5ad")
     adata_stim_embed_wt = adata_stim_embed[adata_stim_embed.obs["cell_line"] == "WTC11-WT-Tau"]
     adata_stim_embed_wt.obs['location_id'] = adata_stim_embed_wt.obs['condition'].astype('str') + '-' + adata_stim_embed_wt.obs['well_id'].astype('str')
 

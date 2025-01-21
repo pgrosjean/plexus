@@ -152,23 +152,14 @@ class NetworkMAE(pl.LightningModule):
         # Defining the encoder and decoder blocks
         if random_init:
             # Setting up the encoder
-            encoder_layer_input = nn.TransformerEncoderLayer(d_model=768,
-                                                             nhead=12,
-                                                             batch_first=True,
-                                                             dim_feedforward=3072)
-            encoder = nn.TransformerEncoder(encoder_layer_input, num_layers=12)
+            model_encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg')
+            model_decoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg')
             norm_encoder = nn.LayerNorm(768)
-            self.encoder_blocks = nn.Sequential(encoder, norm_encoder)
-            # Setting up the decoder
-            encoder_layer_output = nn.TransformerEncoderLayer(d_model=768,
-                                                              nhead=12,
-                                                              batch_first=True,
-                                                              dim_feedforward=3072)
-            decoder = nn.TransformerEncoder(encoder_layer_output, num_layers=12)
+            self.encoder_blocks = nn.Sequential(*model_encoder.blocks, norm_encoder)
             norm_decoder = nn.LayerNorm(768)
-            self.decoder_blocks = nn.Sequential(decoder, norm_decoder)
+            self.decoder_blocks = nn.Sequential(*model_decoder.blocks, norm_decoder)
             # Initializing the weights
-            self.apply(self._init_weightsd)
+            self.apply(self._init_weights)
         else:
             pretrained_model_encoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg')
             pretrained_model_decoder = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14_reg')
@@ -265,7 +256,6 @@ class NetworkMAE(pl.LightningModule):
         x_masked = torch.gather(x, dim=1, index=ids_keep.unsqueeze(-1).repeat(1, 1, D))
         return x_masked
 
-    # @torch.no_grad()
     def _create_channel_embedding(self,
                                   tokens: torch.Tensor,
                                   mask: torch.Tensor,
@@ -310,18 +300,6 @@ class NetworkMAE(pl.LightningModule):
             channel_embeddings = masked_tokens.sum(dim=2) # shape: [batch, num_cells, 768]
             if not torch.any(denominator == 0):
                 channel_embeddings = channel_embeddings / denominator.unsqueeze(-1) # shape: [batch, num_cells, 768]
-        
-            # channel_embeddings = channel_embeddings.flatten(0,1) # shape [batch*num_cells, 768]
-            # channel_embeddings = self.channel_embed_projector(channel_embeddings)  # shape: [batch*num_cells, 768]
-            # channel_embeddings = channel_embeddings.reshape(tokens.shape[0], self.num_channels, -1)  # shape: [batch, num_cells, 768]
-            # channel_embeddings = channel_embeddings.flatten(0, 1) # shape: [batch*num_cells, 768]
-            # channel_embeddings = channel_embeddings.reshape(tokens.shape[0], self.num_channels, -1)  # shape: [batch, num_cells, 768]
-            # if is_decoder:
-            #     channel_embeddings = self.decoder_channel_embed_set_attention(channel_embeddings)
-            # else:
-            #     channel_embeddings = self.encoder_channel_embed_set_attention(channel_embeddings)  # shape: [batch, num_cells, 768]
-            # channel_embeddings = channel_embeddings.unsqueeze(2).repeat(1, 1, self.num_patches, 1)  # shape: [batch, num_cells, num_tokens, 768]
-            # channel_embeddings = channel_embeddings.flatten(1, 2)  # shape: [batch, num_cells*num_tokens, 768]
 
             if is_decoder:
                 channel_tokens = self.decoder_channel_tokens
@@ -583,10 +561,6 @@ class NetworkMAE(pl.LightningModule):
             latent, mask, ids_restore, chan_embeds_encoder = self.forward_encoder(x, self.mask_percentage)
             pred, chan_embeds_decoder = self.forward_decoder(latent, mask, ids_restore)
             loss, reconstruction, time_mask = self.forward_loss(x, pred, mask)
-            # if self.permutation_invariant:
-            #     encoder_channel_embed_loss = self.channel_embedding_diversity_loss(chan_embeds_encoder)
-            #     decoder_channel_embed_loss = self.channel_embedding_diversity_loss(chan_embeds_decoder)
-            #     loss = loss + encoder_channel_embed_loss + decoder_channel_embed_loss
             return latent, loss, reconstruction, time_mask
     
     @torch.no_grad()
