@@ -22,7 +22,7 @@ def main():
     hue_order = ['WT-WTC11', 'Mutant-WTC11', 'WT-Patient Line', 'Mutant-Patient Line']
 
     # Plotting the PCA of the embedding data per cell line
-    adata_crispri = ad.read_h5ad('/../../plexus_data_archive/plexus_embeddings/crispri_screen/crispri_screen_plexus_embeddings.h5ad')
+    adata_crispri = ad.read_h5ad('../../plexus_data_archive/plexus_embeddings/crispri_screen/crispri_screen_plexus_embeddings.h5ad')
     zarr_name_base = adata_crispri.obs['location_id'].apply(lambda x: x.split('-')[0]).astype('str').values
     well_ids = adata_crispri.obs['well_id'].astype('str').values
     fov_ids = adata_crispri.obs['fov_id'].astype('str').values
