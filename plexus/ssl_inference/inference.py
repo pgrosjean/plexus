@@ -14,7 +14,7 @@ from plexus.ssl_inference.utils.model_load import load_model_from_wandb_for_infe
 
 def main():
     argparser = ArgumentParser()
-    argparser.add_argument("--checkpoint_path", type=Union[str, None], default=None, help="Path to the model checkpoint.")
+    argparser.add_argument("--checkpoint_path", type=str, default="none", help="Path to the model checkpoint.")
     argparser.add_argument("--wandb_entity", type=str, help="WandB entity where the model is stored.")
     argparser.add_argument("--wandb_uid", type=str, help="WandB unique identifier for the model.")
     argparser.add_argument("--zarr_path", type=str, help="Path to the Zarr file.")
@@ -45,7 +45,7 @@ def main():
 
     with hydra.initialize(version_base=None, config_path=str(relative_path)):
         config = hydra.compose(config_name=str(args.config))
-    if args.checkpoint_path is not None:
+    if args.checkpoint_path != "none":
         model = load_model_from_checkpoint(args.checkpoint_path)
     else:
         model = load_model_from_wandb_for_inference(config, args.wandb_entity, args.wandb_uid)
@@ -101,12 +101,12 @@ def main():
     if save_path[-1] == "/":
         save_path = save_path[:-1]
     if network_average:
-        if args.checkpoint_path is None:
+        if args.checkpoint_path == "none":
             embeddings_df.to_parquet(f"{save_path}/Embeddings_{args.wandb_uid}_{num_cells}_cells_network_average.parquet")
         else:
             embeddings_df.to_parquet(f"{save_path}/Embeddings_from_checkpoint_{num_cells}_cells_network_average.parquet")
     else:
-        if args.checkpoint_path is None:
+        if args.checkpoint_path == "none":
             embeddings_df.to_parquet(f"{save_path}/Embeddings_{args.wandb_uid}_{num_cells}_cells.parquet")
         else:
             embeddings_df.to_parquet(f"{save_path}/Embeddings_from_checkpoint_{num_cells}_cells.parquet")
