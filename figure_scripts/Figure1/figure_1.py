@@ -66,8 +66,8 @@ def main():
     plot_and_save_timeseries(tent_traces, trace_color, sampling_freq, 'figure_1f_tent')
 
 
-    adata_dmso = ad.read_h5ad('/srv/home/pgrosjean/plexus/figure_scripts/Figure1/DMSO_traces.h5ad')
-    adata_tent = ad.read_h5ad('/srv/home/pgrosjean/plexus/figure_scripts/Figure1/TeNT_traces.h5ad')
+    adata_dmso = ad.read_h5ad('./../../plexus_data_archive/figure1_data/DMSO_traces.h5ad')
+    adata_tent = ad.read_h5ad('./../../plexus_data_archive/figure1_data/DMSO_traces.h5ad')
 
     correlation_coeffs = []
     treatments = []
