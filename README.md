@@ -17,7 +17,7 @@ All training and inference requires at least one NVIDIA GPU with at least 24 Gb 
 
 # Downloading the data archive
 To train the models you must first download the data archive from Zenodo
-Note: Zenodo link is coming shortly
+Note: Zenodo link is coming shortly (10.5281/zenodo.14714574)
 ```bash
 wget [ZENODO LINK]
 gunzip plexus_data_archive.gz
