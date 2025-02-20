@@ -76,3 +76,6 @@ plexus-inference --config crispri_screen_1cell --zarr_path ./plexus_data_archive
 ```bash
 plexus-inference --config simulation_8cell --zarr_path ./plexus_data_archive/processed_zarr_files/simulation/ --dataset_stats_json ./plexus_data_archive/dataset_statistics/simulation/SIMULATION_STATS_DICT.json --save_path ./simulation_embedding_parquet_files/ --checkpoint_path ./plexus_data_archive/model_checkpoints/simulation/model-1s3n8lon:v1/model.ckpt
 ```
+
+# Reproducing Figure Results
+To reproduce the figure results one can run the python scripts provided in the folder figure_scripts, which will generate PDF files containing figure panels.
