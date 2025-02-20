@@ -78,4 +78,4 @@ plexus-inference --config simulation_8cell --zarr_path ./plexus_data_archive/pro
 ```
 
 # Reproducing Figure Results
-To reproduce the figure results one can run the python scripts provided in the folder figure_scripts, which will generate PDF files containing figure panels.
+To reproduce the figure results for the associated [manuscript](https://www.biorxiv.org/content/10.1101/2025.02.04.636489v1.full.pdf) one can run the python scripts provided in the folder figure_scripts, which will generate PDF files containing figure panels.
