@@ -14,9 +14,11 @@ bash setup_mamba.sh
 conda activate plexus
 pip install -e .
 ```
+Note: Typical installation time should be under 2 minutes.
 
 # Hardware and Software Specifications
-All training and inference requires at least one NVIDIA GPU with at least 24 Gb memory
+All training and inference requires at least one NVIDIA GPU with at least 24 Gb memory.
+Models were all trained using python 3.10 with CUDA 12.1
 
 # Downloading the data archive
 To train the models you must first download the data archive from Zenodo
@@ -55,7 +57,9 @@ When running inference this assumes you have properly downloaded the dataset arc
 
 If you are running from another location you will need to change the paths to match your working directory.
 
-Running inference generates parquet files with the embeddings infromation and plate and well information.
+Running inference generates parquet files with the embedding information along with the plate and well information.
+
+Note: Running inference on a GPU enabled machine should take around 30 minutes to 4 hours depending on the dataset size.
 
 
 ### CRISRPi Screen Plexus Model Inference
