@@ -25,7 +25,7 @@ To train the models you must first download the data archive from Zenodo
 Zenodo DOI (10.5281/zenodo.14714574)
 ```bash
 wget https://zenodo.org/records/14714574/files/plexus_data_archive.zip
-gunzip plexus_data_archive.gz
+unzip plexus_data_archive.zip
 ```
 **Note: this data archive also includes .h5ad files containing both the manual features and the plexus embeddings.**
 
