@@ -20,7 +20,7 @@ train_config:
   checkpoint_every_n_epochs: 20
   precision: 32
   profiler: simple
-  gpu_num: 1
+  gpu_num: 2
 
 lr_config:
   _target_: plexus.ssl_training.utils.scheduler.HyperParameterScheduler
@@ -33,14 +33,13 @@ lr_config:
 wandb_config:
   _target_: plexus.ssl_training.utils.train_utils.WandbRunConfig
   project: plexus
-  run_name: neuroactive_stimulation_8cell_plexus
+  run_name: neuroactive_stimulation_8cell_plexus_ablation
 
 model_config:
-  _target_: plexus.ssl_training.models.plexus_model.NetworkMAE
+  _target_: plexus.ssl_training.models.plexus_model_ablation.NetworkMAEAblations
   lr_scheduler: ${lr_config}
   time_window: 24  # Note: time_window * num_patches must be equal to the signal length
   num_patches: 50  # Per cell
-  num_register_tokens: 5
   num_channels: 8  # number of cells per network
   mask_percentage: 0.5
   permutation_invariant: True

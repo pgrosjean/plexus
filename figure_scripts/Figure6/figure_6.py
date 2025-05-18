@@ -99,7 +99,7 @@ def main():
         cond_adata = adata_wtc11_ntc[adata_wtc11_ntc.obs['cell_line'] == cond, :]
         unq_cond_strat = cond_adata.obs['strat_id'].unique()
         # Splitting the data into train and test
-        train_strat, test_strat = train_test_split(unq_cond_strat, test_size=0.5, random_state=14)
+        train_strat, test_strat = train_test_split(unq_cond_strat, test_size=0.4, random_state=14)
         train_idx = np.arange(len(adata_wtc11_ntc))[adata_wtc11_ntc.obs['strat_id'].isin(train_strat).values]
         val_idx = np.arange(len(adata_wtc11_ntc))[adata_wtc11_ntc.obs['strat_id'].isin(test_strat).values]
         train_indices.append(train_idx)

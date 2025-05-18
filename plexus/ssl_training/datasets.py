@@ -15,8 +15,8 @@ from plexus.ssl_training.utils.train_utils import TrainConfig
 # Constants
 # CHANGE THIS BASE PATH TO THE LOCATION OF THE DATASETS ON YOUR SYSTEM  P
 # setting base path to the location of this file
-BASE_PATH = Path(__file__).parent / "../../plexus_data_archive/processed_zarr_files/"
-
+# BASE_PATH = Path(__file__).parent / "../../plexus_data_archive/processed_zarr_files/"
+BASE_PATH = "/scratch/pgrosjean/plexus_data_archive/processed_zarr_files/"
 NEUROACTIVE_ZARR_PATH = f"{BASE_PATH}/neuroactive_stimulation/processed_zarr_files/"
 NEUROACTIVE_DATASET_NO_SPLIT_STATS_DICT = {"d14_delta": (0.036551, 0.027913),
                                   "d17_delta": (0.051059, 0.041993),
@@ -91,6 +91,7 @@ class NetworkDataset(Dataset):
         signal = torch.Tensor(sampled_signal) - ds[0]
         signal = signal / ds[1]
         return signal
+    
     
 class NetworkDatasetPlateStats(Dataset):
     def __init__(self, zarr_files, zarr_paths, num_cells, dataset_stats_dict):

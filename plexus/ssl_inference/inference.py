@@ -28,6 +28,8 @@ def main():
     argparser.add_argument("--dataset_std", type=float, help="Dataset std (float). Only used if dataset_stats_json is not provided.")
     argparser.add_argument("--seed", type=int, default=14, help="Random seed to use for generating network samples. (default: 14)")
     argparser.add_argument("--only_nuclei_positive", action="store_true", help="Only use nuclei positive cells.")
+    argparser.add_argument("--save_cls_tokens", action="store_true", help="Save CLS tokens in the embeddings.")
+    argparser.add_argument("--save_register_tokens", action="store_true", help="Save register tokens in the embeddings.")
     args = argparser.parse_args()
     network_average = args.network_average
 
@@ -59,6 +61,10 @@ def main():
     inference_dataloader = torch.utils.data.DataLoader(inference_dataset, batch_size=24, shuffle=False)
 
     embeddings = []
+    if args.save_cls_tokens:
+        cls_tokens = []
+    if args.save_register_tokens:
+        register_tokens = []
     print(f"Performing inference on the model with checkpoint from WandB {args.wandb_uid}...")
     if torch.cuda.is_available():
         device = torch.device(f"cuda:{args.gpu_num}")
@@ -66,8 +72,12 @@ def main():
         num_tokens_per_cell = model.num_patches
         for batch in tqdm(inference_dataloader):
             with torch.no_grad():
-                output, _, _, _ = model(batch.to(device), inference=True)
+                output, cls_token, register_token, _ = model(batch.to(device), inference=True)
                 output = output.cpu().detach().numpy()
+                if args.save_cls_tokens:
+                    cls_tokens.append(cls_token.cpu().detach().numpy())
+                if args.save_register_tokens:
+                    register_tokens.append(register_token.cpu().detach().numpy())
                 if network_average:
                     output = np.mean(output, axis=1)
                 else:
@@ -76,8 +86,12 @@ def main():
     else:
         for batch in tqdm(inference_dataloader):
             with torch.no_grad():
-                output, _, _, _ = model(batch)
+                output, _, _, _ = model(batch, inference=True)
                 output = output.numpy()
+                if args.save_cls_tokens:
+                    cls_tokens.append(cls_token.numpy())
+                if args.save_register_tokens:
+                    register_tokens.append(register_token.numpy())
                 if network_average:
                     output = np.mean(output, axis=1)
                 else:
@@ -85,6 +99,13 @@ def main():
                 embeddings.append(output)
     
     embeddings = np.vstack(embeddings)
+    if args.save_cls_tokens:
+        cls_tokens = np.vstack(cls_tokens)
+        np.save(f"cls_tokens.npy", cls_tokens)
+    if args.save_register_tokens:
+        register_tokens = np.concatenate(register_tokens, axis=0)
+        register_tokens = np.transpose(register_tokens, (1, 0, 2))
+        np.save(f"register_tokens.npy", register_tokens)
     paths = inference_dataset.paths
     cell_indices = inference_dataset.cell_indices
     zarr_files = inference_dataset.root
@@ -95,6 +116,12 @@ def main():
                                   "paths": paths,
                                   "cell_indices": [ci for ci in cell_indices],
                                   "embeddings": [embed for embed in embeddings]})
+    if args.save_cls_tokens:
+        embeddings_df["cls_tokens"] = [cls_token for cls_token in cls_tokens]
+    # if args.save_register_tokens:
+    #     for i in range(len(register_tokens)):
+    #         embeddings_df[f"register_token_{i}"] = [register_token[i] for register_token in register_tokens]
+    
     save_path = args.save_path
     if not os.path.exists(save_path):
         os.makedirs(save_path)
