@@ -69,40 +69,6 @@ def get_1d_sincos_pos_embed(embed_dim,
     return pos_embed
 
 
-class CellSetAttentionNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim):
-        super(CellSetAttentionNetwork, self).__init__()
-        self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
-
-        # Define linear layers for the attention mechanism
-        self.query_layer = nn.Linear(input_dim, hidden_dim)
-        self.key_layer = nn.Linear(input_dim, hidden_dim)
-        self.value_layer = nn.Linear(input_dim, hidden_dim)
-        self.output_layer = nn.Linear(hidden_dim, input_dim)
-
-        # Layer normalization
-        self.layer_norm = nn.LayerNorm(input_dim)
-
-    def forward(self, X):
-        # X is of shape (batch_size, num_vectors, input_dim)
-        queries = self.query_layer(X)  # Shape: (batch_size, num_vectors, hidden_dim)
-        keys = self.key_layer(X)       # Shape: (batch_size, num_vectors, hidden_dim)
-        values = self.value_layer(X)   # Shape: (batch_size, num_vectors, hidden_dim)
-
-        # Compute attention scores (batch-wise dot product)
-        attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) / (self.hidden_dim ** 0.5)
-        attention_weights = F.softmax(attention_scores, dim=-1)  # Shape: (batch_size, num_vectors, num_vectors)
-
-        # Aggregate values using attention weights
-        context = torch.matmul(attention_weights, values)  # Shape: (batch_size, num_vectors, hidden_dim)
-
-        # Output transformation
-        output = self.output_layer(context)  # Shape: (batch_size, num_vectors, input_dim)
-        output = self.layer_norm(output + X)  # Residual connection and layer normalization
-        return output
-
-
 class NetworkMAEAblations(pl.LightningModule):
     def __init__(self,
                  lr_scheduler: HyperParameterScheduler,

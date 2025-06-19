@@ -218,7 +218,7 @@ def compute_auroc_for_guides(
 
 
 def main():
-    base_path = "/scratch/pgrosjean/plexus_data_archive"
+    base_path = "../../plexus_data_archive/"
     wtc11_wt_color = "#5D8195"
     wtc11_mut_color = "#FFC20A"
     patient_wt_color = "#35B5FD"

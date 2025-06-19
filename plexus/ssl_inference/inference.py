@@ -97,11 +97,7 @@ def main():
                 else:
                     output = np.mean(output[:, :num_tokens_per_cell, :], axis=1)
                 embeddings.append(output)
-    
     embeddings = np.vstack(embeddings)
-    if args.save_cls_tokens:
-        cls_tokens = np.vstack(cls_tokens)
-        np.save(f"cls_tokens.npy", cls_tokens)
     if args.save_register_tokens:
         register_tokens = np.concatenate(register_tokens, axis=0)
         register_tokens = np.transpose(register_tokens, (1, 0, 2))
@@ -118,9 +114,6 @@ def main():
                                   "embeddings": [embed for embed in embeddings]})
     if args.save_cls_tokens:
         embeddings_df["cls_tokens"] = [cls_token for cls_token in cls_tokens]
-    # if args.save_register_tokens:
-    #     for i in range(len(register_tokens)):
-    #         embeddings_df[f"register_token_{i}"] = [register_token[i] for register_token in register_tokens]
     
     save_path = args.save_path
     if not os.path.exists(save_path):
