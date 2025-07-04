@@ -31,7 +31,8 @@ import torch.nn.functional as F
 ###########################################
 ###########################################
 
-def get_1d_sincos_pos_embed(embed_dim, num_positions):
+def get_1d_sincos_pos_embed(embed_dim,
+    num_positions):
     """
     Generate 1D sinusoidal positional embeddings.
 
@@ -68,41 +69,7 @@ def get_1d_sincos_pos_embed(embed_dim, num_positions):
     return pos_embed
 
 
-class CellSetAttentionNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim):
-        super(CellSetAttentionNetwork, self).__init__()
-        self.input_dim = input_dim
-        self.hidden_dim = hidden_dim
-
-        # Define linear layers for the attention mechanism
-        self.query_layer = nn.Linear(input_dim, hidden_dim)
-        self.key_layer = nn.Linear(input_dim, hidden_dim)
-        self.value_layer = nn.Linear(input_dim, hidden_dim)
-        self.output_layer = nn.Linear(hidden_dim, input_dim)
-
-        # Layer normalization
-        self.layer_norm = nn.LayerNorm(input_dim)
-
-    def forward(self, X):
-        # X is of shape (batch_size, num_vectors, input_dim)
-        queries = self.query_layer(X)  # Shape: (batch_size, num_vectors, hidden_dim)
-        keys = self.key_layer(X)       # Shape: (batch_size, num_vectors, hidden_dim)
-        values = self.value_layer(X)   # Shape: (batch_size, num_vectors, hidden_dim)
-
-        # Compute attention scores (batch-wise dot product)
-        attention_scores = torch.matmul(queries, keys.transpose(-2, -1)) / (self.hidden_dim ** 0.5)
-        attention_weights = F.softmax(attention_scores, dim=-1)  # Shape: (batch_size, num_vectors, num_vectors)
-
-        # Aggregate values using attention weights
-        context = torch.matmul(attention_weights, values)  # Shape: (batch_size, num_vectors, hidden_dim)
-
-        # Output transformation
-        output = self.output_layer(context)  # Shape: (batch_size, num_vectors, input_dim)
-        output = self.layer_norm(output + X)  # Residual connection and layer normalization
-        return output
-
-
-class NetworkMAE(pl.LightningModule):
+class NetworkMAEAblations(pl.LightningModule):
     def __init__(self,
                  lr_scheduler: HyperParameterScheduler,
                  time_window: int = 50,
@@ -112,7 +79,7 @@ class NetworkMAE(pl.LightningModule):
                  mask_percentage: float = 0.75,
                  random_init: bool = False,
                  permutation_invariant: bool = False):
-        super(NetworkMAE, self).__init__()
+        super(NetworkMAEAblations, self).__init__()
         # Defining modules an values used for model construction
         self.lr_scheduler = lr_scheduler
         self.mask_percentage = mask_percentage
@@ -130,14 +97,8 @@ class NetworkMAE(pl.LightningModule):
         self.encoder_channel_tokens = nn.Parameter(torch.rand(num_channels, 768))
         self.decoder_channel_tokens = nn.Parameter(torch.rand(num_channels, 768))
         self.distance_vector = nn.Parameter(torch.rand(1, 768))
-        self.encoder_channel_embed_set_attention = CellSetAttentionNetwork(768, 768)
-        self.decoder_channel_embed_set_attention = CellSetAttentionNetwork(768, 768)
 
-        # Defining the mask, cls, and register tokens
-        assert num_register_tokens > 0, "At least one register token is required"
-        self.num_register_tokens = num_register_tokens
-        self.registers = nn.Parameter(torch.rand(num_register_tokens, 768))
-        self.cls_token = nn.Parameter(torch.rand(1, 768))
+        # Defining the mask token
         self.mask_token = nn.Parameter(torch.rand(1, 768))
 
         # Defining the patch embedder and reverse patch embedder
@@ -300,7 +261,6 @@ class NetworkMAE(pl.LightningModule):
             channel_embeddings = masked_tokens.sum(dim=2) # shape: [batch, num_cells, 768]
             if not torch.any(denominator == 0):
                 channel_embeddings = channel_embeddings / denominator.unsqueeze(-1) # shape: [batch, num_cells, 768]
-
             if is_decoder:
                 channel_tokens = self.decoder_channel_tokens
             else:
@@ -321,10 +281,11 @@ class NetworkMAE(pl.LightningModule):
 
     def forward_encoder(self, x: torch.Tensor,
                         mask_ratio: float) -> Tuple[torch.Tensor,
-                                                    torch.Tensor,
-                                                    torch.Tensor]:
+                                                torch.Tensor,
+                                                torch.Tensor,
+                                            torch.Tensor]:
         """
-        Forward pass for the encoder.
+        Forward pass for the encoder without CLS or register tokens.
 
         Parameters
         ----------
@@ -332,48 +293,49 @@ class NetworkMAE(pl.LightningModule):
             The input tensor of shape [batch, num_cells, time].
         mask_ratio : float
             The ratio of the sequence to mask.
-        
+
         Returns
         -------
         torch.Tensor
-            The latent tensor of shape [batch_size, num_channels*n_patches+1+num_register_tokens, 768]
+            The latent tensor of shape [batch_size, num_visible_tokens, 768].
         torch.Tensor
-            The mask tensor of shape [batch, num_cells*num_patches].
+            The mask tensor of shape [batch, num_channels*num_patches].
         torch.Tensor
             The indices used to restore the original order.
+        torch.Tensor
+            The encoder channel embeddings of shape [batch_size, num_channels*num_patches, 768].
         """
-        patches = patchify(x, self.patch_size) # shape: [batch_size, num_channels, n_patches, patch_size]
-        patches = patches.flatten(1,2) # shape: [batch_size, num_channels*n_patches, patch_size]
-        tokens = self.patch_embedder(patches) # shape: [batch_size, num_channels*n_patches, 768]
-        # setting up positional embeddings
-        pos_embeds = self.encoder_pos_embed.unsqueeze(0).unsqueeze(0)  # shape: [1, 1, n_patches, 768]
-        pos_embeds = pos_embeds.repeat(tokens.shape[0], self.num_channels, 1, 1).flatten(1, 2)  # shape: [batch_size, num_channels*n_patches, 768]
-        # Creating the mask so that it can be used for channel embeddings and masking
+        # Patchify and flatten
+        patches = patchify(x, self.patch_size)  # [batch_size, num_channels, n_patches, patch_size]
+        patches = patches.flatten(1, 2)  # [batch_size, num_channels * n_patches, patch_size]
+
+        # Project to token space
+        tokens = self.patch_embedder(patches)  # [batch_size, num_channels * n_patches, 768]
+
+        # Positional embeddings
+        pos_embeds = self.encoder_pos_embed.unsqueeze(0).unsqueeze(0)  # [1, 1, n_patches, 768]
+        pos_embeds = pos_embeds.repeat(tokens.shape[0], self.num_channels, 1, 1).flatten(1, 2)  # [batch_size, num_channels * n_patches, 768]
+
+        # Generate mask
         mask, ids_keep, ids_restore = self.create_mask(tokens, mask_ratio)
-        # Creating the channel embeddings for permutation invariance
+
+        # Channel embeddings
         if self.permutation_invariant:
-            channel_embeddings = self._create_channel_embedding(tokens, mask, is_decoder=False)  # shape: [batch, num_channels*num_patches, 768]
+            channel_embeddings = self._create_channel_embedding(tokens, mask, is_decoder=False)  # [batch, num_channels * n_patches, 768]
         else:
-            channel_embeddings = self.encoder_channel_tokens.unsqueeze(0) # shape: [1, num_channels, 768]
-            channel_embeddings = channel_embeddings.unsqueeze(2) # shape: [1, num_channels, 1, 768]
-            channel_embeddings = channel_embeddings.repeat(tokens.shape[0], 1, self.num_patches, 1) # shape: [batch_size, num_channels, num_patches, 768]
-            channel_embeddings = channel_embeddings.flatten(1, 2) # shape: [batch_size, num_channels*num_patches, 768]
-        # adding positional embeddings
-        tokens = tokens + pos_embeds  # shape: [batch_size, num_channels*n_patches, 768]
-        # adding channel embeddings
-        tokens = tokens + channel_embeddings  # shape: [batch_size, num_channels*n_patches, 768]
-        # Masking the tokens
-        masked_tokens = self.random_masking(tokens, ids_keep)
-        # mt_embed: mask_ratio*num_channels*n_patches
-        # Adding register tokens
-        register_tokens = self.registers.unsqueeze(0).repeat(tokens.shape[0], 1, 1) # shape: [batch_size, num_register_tokens, 768]
-        masked_tokens = torch.concat((register_tokens, masked_tokens), dim=1) # shape: [batch_size, mt_embed+1+num_register_tokens, 768]
-        # Adding CLS token
-        cls_token = self.cls_token.unsqueeze(0).repeat(masked_tokens.shape[0], 1, 1) # shape: [batch_size, 1, 768]
-        masked_tokens = torch.concat((cls_token, masked_tokens), dim=1) # shape: [batch_size, mt_embed+1, 768]
-        # Passing through the Encoder
-        x = self.encoder_blocks(masked_tokens)  # shape: [batch_size, mt_embed+1+num_register_tokens, 768]
-        return x, mask, ids_restore, channel_embeddings
+            channel_embeddings = self.encoder_channel_tokens.unsqueeze(0).unsqueeze(2)  # [1, num_channels, 1, 768]
+            channel_embeddings = channel_embeddings.repeat(tokens.shape[0], 1, self.num_patches, 1).flatten(1, 2)  # [batch_size, num_channels * n_patches, 768]
+
+        # Add embeddings
+        tokens = tokens + pos_embeds + channel_embeddings
+
+        # Apply masking
+        masked_tokens = self.random_masking(tokens, ids_keep)  # [batch_size, num_visible_tokens, 768]
+
+        # Encode
+        encoded = self.encoder_blocks(masked_tokens)  # [batch_size, num_visible_tokens, 768]
+
+        return encoded, mask, ids_restore, channel_embeddings
     
     def forward_inference(self,
                           x: torch.Tensor) -> torch.Tensor:
@@ -414,34 +376,22 @@ class NetworkMAE(pl.LightningModule):
         # adding channel embeddings
         tokens = tokens + channel_embeddings  # shape: [batch_size, num_channels*n_patches, 768]
         # Adding register tokens
-        register_tokens = self.registers.unsqueeze(0).repeat(tokens.shape[0], 1, 1) # shape: [batch_size, num_register_tokens, 768]
-        tokens = torch.concat((register_tokens, tokens), dim=1) # shape: [batch_size, mt_embed+1+num_register_tokens, 768]
-        # Adding CLS token
-        cls_token = self.cls_token.unsqueeze(0).repeat(tokens.shape[0], 1, 1) # shape: [batch_size, 1, 768]
-        tokens = torch.concat((cls_token, tokens), dim=1) # shape: [batch_size, num_cells*num_tokens+1+num_register_tokens, 768]
-        # Passing through the Encoder
         x = self.encoder_blocks(tokens)
-        # Extracting cell tokens
-        cell_tokens = x[:, (1+self.num_register_tokens):, :]
-        # Extracting the cls token
-        cls_token = x[:, 0, :]
-        # Extracting the register tokens
-        register_tokens = x[:, 1:(1+self.num_register_tokens), :]
-        return cell_tokens, cls_token, register_tokens
+        return x, None, None
         
     def forward_decoder(self,
-                        x: torch.Tensor,
-                        mask: torch.Tensor,
-                        ids_restore: torch.Tensor) -> torch.Tensor:
+                    x: torch.Tensor,
+                    mask: torch.Tensor,
+                    ids_restore: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass for the decoder.
+        Forward pass for the decoder without CLS or register tokens.
 
         Parameters
         ----------
         x : torch.Tensor
-            The input tensor of shape [batch_size, num_channels*n_patches+1+num_register_tokens, 768]
+            The input tensor of shape [batch_size, num_visible_tokens, 768]
         mask : torch.Tensor
-            The mask tensor of shape [batch, num_cells*num_patches] used for generating the channel embeddings.
+            The mask tensor of shape [batch, num_channels*num_patches] used for generating the channel embeddings.
         ids_restore : torch.Tensor
             The indices used to restore the original order of the tokens.
 
@@ -449,35 +399,41 @@ class NetworkMAE(pl.LightningModule):
         -------
         torch.Tensor
             The output tensor of shape [batch_size, num_channels, num_patches, patch_size]
+        torch.Tensor
+            The decoder channel embeddings used.
         """
-        x = self.decoder_embed(x)  # shape: [batch_size, (num_channels*n_patches*mask_ratio)+1+num_register_tokens, 768]
-        dim_1_size = ids_restore.shape[1] + 1 + self.num_register_tokens - x.shape[1]
-        mask_tokens = self.mask_token.repeat(x.shape[0], dim_1_size, 1) # shape: [batch_size, dim_1_size, 768]
-        token_num_to_remove = self.num_register_tokens + 1
-        x_ = torch.cat([x[:, token_num_to_remove:, :], mask_tokens], dim=1)  # no cls or register tokens
-        x_ = torch.gather(x_, dim=1, index=ids_restore.unsqueeze(-1).repeat(1, 1, x.shape[2]))  # unshuffle to shape: [batch_size, num_channels*n_patches, 768]
-        # adding the cls and register tookens back
-        x = torch.cat([x[:, :token_num_to_remove, :], x_], dim=1)  # shape: [batch_size, num_channels*n_patches+1+num_register_tokens, 768]
-        # add pos embed for decoder
-        pos_embeds = self.decoder_pos_embed.unsqueeze(0).unsqueeze(0)  # shape: [1, 1, n_patches, 768]
-        pos_embeds = pos_embeds.repeat(x.shape[0], self.num_channels, 1, 1)  # shape: [batch_size, num_channels, n_patches, 768]
-        pos_embeds = pos_embeds.flatten(1, 2)  # shape: [batch_size, num_channels*n_patches, 768]
-        x[:, token_num_to_remove:, :] = x[:, token_num_to_remove:, :] + pos_embeds  # shape: [batch_size, num_channels*n_patches+1+num_register_tokens, 768]
-        # add the channel tokens for decoder
+        x = self.decoder_embed(x)  # shape: [batch_size, num_visible_tokens, 768]
+
+        # Fill in masked tokens
+        num_masked = ids_restore.shape[1] - x.shape[1]
+        mask_tokens = self.mask_token.repeat(x.shape[0], num_masked, 1)  # shape: [batch_size, num_masked, 768]
+
+        # Append mask tokens and restore the original order
+        x_ = torch.cat([x, mask_tokens], dim=1)  # shape: [batch_size, num_tokens, 768]
+        x = torch.gather(x_, dim=1, index=ids_restore.unsqueeze(-1).repeat(1, 1, x.shape[2]))  # shape: [batch_size, num_channels*num_patches, 768]
+
+        # Add decoder positional embeddings
+        pos_embeds = self.decoder_pos_embed.unsqueeze(0).unsqueeze(0)  # [1, 1, n_patches, 768]
+        pos_embeds = pos_embeds.repeat(x.shape[0], self.num_channels, 1, 1).flatten(1, 2)  # [batch_size, num_channels*n_patches, 768]
+        x = x + pos_embeds
+
+        # Add decoder channel embeddings
         if self.permutation_invariant:
-            decoder_channel_embeddings = self._create_channel_embedding(x[:, token_num_to_remove:, :], mask, is_decoder=True)  # shape: [batch, num_channels*num_patches, 768]
+            decoder_channel_embeddings = self._create_channel_embedding(x, mask, is_decoder=True)
         else:
-            channel_embeddings = self.decoder_channel_tokens.unsqueeze(0)  # shape: [1, num_channels, 768]
-            channel_embeddings = channel_embeddings.unsqueeze(2)  # shape: [1, num_channels, 1, 768]
-            channel_embeddings = channel_embeddings.repeat(x.shape[0], 1, self.num_patches, 1)  # shape: [batch_size, num_channels, num_patches, 768]
-            decoder_channel_embeddings = channel_embeddings.flatten(1, 2)  # shape: [batch_size, num_channels*num_patches, 768]
-        x[:, token_num_to_remove:, :] = x[:, token_num_to_remove:, :] + decoder_channel_embeddings  # shape: [batch_size, num_channels*n_patches+1+num_register_tokens, 768]
-        # apply Transformer blocks
-        x = self.decoder_blocks(x) # shape: [batch_size, num_channels*n_patches+1+num_register_tokens, 768]
-        x = self.rev_patch_embeder(x)  # shape: [batch_size, num_channels*n_patches+1+num_register_tokens, patch_size]
-        # removing cls an register tokens
-        x = x[:, token_num_to_remove:, :]  # shape: [batch_size, num_channels*n_patches, patch_size]
-        x = x.reshape(x.shape[0], self.num_channels, self.num_patches, -1)  # shape: [batch_size, num_channels, num_patches, patch_size]
+            channel_embeddings = self.decoder_channel_tokens.unsqueeze(0).unsqueeze(2)  # [1, num_channels, 1, 768]
+            channel_embeddings = channel_embeddings.repeat(x.shape[0], 1, self.num_patches, 1)  # [batch_size, num_channels, num_patches, 768]
+            decoder_channel_embeddings = channel_embeddings.flatten(1, 2)  # [batch_size, num_channels*num_patches, 768]
+
+        x = x + decoder_channel_embeddings
+
+        # Transformer decoding
+        x = self.decoder_blocks(x)  # [batch_size, num_channels*n_patches, 768]
+        x = self.rev_patch_embeder(x)  # [batch_size, num_channels*n_patches, patch_size]
+
+        # Reshape into patch grid
+        x = x.reshape(x.shape[0], self.num_channels, self.num_patches, -1)  # [batch_size, num_channels, num_patches, patch_size]
+
         return x, decoder_channel_embeddings
     
     def forward_loss(self,
@@ -555,8 +511,8 @@ class NetworkMAE(pl.LightningModule):
             The time mask tensor of shape [batch, num_channels, time].
         """
         if inference:
-            latent, cls_token, register_tokens = self.forward_inference(x)
-            return latent, cls_token, register_tokens, None
+            latent, _, _ = self.forward_inference(x)
+            return latent, None, None, None
         else:
             latent, mask, ids_restore, chan_embeds_encoder = self.forward_encoder(x, self.mask_percentage)
             pred, chan_embeds_decoder = self.forward_decoder(latent, mask, ids_restore)

@@ -46,6 +46,7 @@ def compute_auroc_for_guides(
     np.random.seed(0)
     guide_id_list = []
     auroc_list = []
+    auroc_list_2 = [] # for the second fold of the split
 
     # Standardize the data
     ss = StandardScaler()
@@ -148,6 +149,9 @@ def compute_auroc_for_guides(
 
         X_train = np.vstack([X_ntc_train, X_guide_train])
         y_train = np.hstack([y_ntc_train, y_guide_train])
+        # Combine ntc and guide data for testing
+        X_test = np.vstack([X_ntc_test, X_guide_test])
+        y_test = np.hstack([y_ntc_test, y_guide_test])
         # Check if y_train contains both classes
         if len(np.unique(y_train)) < 2:
             print(f'Training data does not contain both classes for guide {unique_guide_id}. Skipping.')
@@ -159,14 +163,19 @@ def compute_auroc_for_guides(
             solver='saga', 
             l1_ratio=0.5
         )
+        log_reg_model_2 = LogisticRegression(
+            max_iter=1000, 
+            random_state=42, 
+            penalty='elasticnet', 
+            solver='saga',
+            l1_ratio=0.5
+        )
         try:
             log_reg_model.fit(X_train, y_train)
+            log_reg_model_2.fit(X_test, y_test)
         except Exception as e:
             print(f'Error fitting model for guide {unique_guide_id}: {e}. Skipping.')
             continue
-        # Combine ntc and guide data for testing
-        X_test = np.vstack([X_ntc_test, X_guide_test])
-        y_test = np.hstack([y_ntc_test, y_guide_test])
         # Check if y_test contains both classes
         if len(np.unique(y_test)) < 2:
             print(f'Testing data does not contain both classes for guide {unique_guide_id}. Skipping.')
@@ -175,6 +184,9 @@ def compute_auroc_for_guides(
             y_pred = log_reg_model.predict_proba(X_test)[:, 1]
             fpr, tpr, _ = roc_curve(y_test, y_pred)
             roc_auc = auc(fpr, tpr)
+            y_pred_2 = log_reg_model_2.predict_proba(X_train)[:, 1]
+            fpr_2, tpr_2, _ = roc_curve(y_train, y_pred_2)
+            roc_auc_2 = auc(fpr_2, tpr_2)
         except Exception as e:
             print(f'Error evaluating model for guide {unique_guide_id}: {e}. Skipping.')
             continue
@@ -197,10 +209,16 @@ def compute_auroc_for_guides(
             plt.show()
         guide_id_list.append(unique_guide_id)
         auroc_list.append(roc_auc)
-    return pd.DataFrame({guide_id_col: guide_id_list, 'auroc': auroc_list})
+        auroc_list_2.append(roc_auc_2)
+        return_df = pd.DataFrame({
+            guide_id_col: np.hstack([np.array(guide_id_list), np.array(guide_id_list)]),
+            'auroc': np.hstack([np.array(auroc_list), np.array(auroc_list_2)])
+        })
+    return return_df
 
 
 def main():
+    base_path = "../../plexus_data_archive/"
     wtc11_wt_color = "#5D8195"
     wtc11_mut_color = "#FFC20A"
     patient_wt_color = "#35B5FD"
@@ -210,15 +228,15 @@ def main():
     palette = sns.color_palette(palette)
     
     # Reading in the adata for embeddings
-    adata_wt_wtc11_sc_tvn_embed = ad.read_h5ad('../../plexus_data_archive/plexus_embeddings/crispri_screen/tvn_corrected_embeddings/single_cell_tvn_corrected_embeddings_WT_WTC11_CRISPRi.h5ad')
-    adata_wt_patient_sc_tvn_embed = ad.read_h5ad('../../plexus_data_archive/plexus_embeddings/crispri_screen/tvn_corrected_embeddings/single_cell_tvn_corrected_embeddings_WT_Patient_Line_CRISPRi.h5ad')
+    adata_wt_wtc11_sc_tvn_embed = ad.read_h5ad(f'{base_path}/plexus_embeddings/crispri_screen/tvn_corrected_embeddings/single_cell_tvn_corrected_embeddings_WT_WTC11_CRISPRi.h5ad')
+    adata_wt_patient_sc_tvn_embed = ad.read_h5ad(f'{base_path}/plexus_embeddings/crispri_screen/tvn_corrected_embeddings/single_cell_tvn_corrected_embeddings_WT_Patient_Line_CRISPRi.h5ad')
 
     # Reading in the adata for the raw data
     adata_wt_wtc11_sc_tvn_embed = aggregate_by_column(adata_wt_wtc11_sc_tvn_embed, 'aggregate_by')
     adata_wt_patient_sc_tvn_embed = aggregate_by_column(adata_wt_patient_sc_tvn_embed, 'aggregate_by')
 
     scaler = StandardScaler()
-    man_feat_adata = ad.read_h5ad("../../plexus_data_archive/plexus_embeddings/crispri_screen/crispri_screen_manual_features.h5ad")
+    man_feat_adata = ad.read_h5ad(f"{base_path}/plexus_embeddings/crispri_screen/crispri_screen_manual_features.h5ad")
     man_feat_adata.X = scaler.fit_transform(man_feat_adata.X)
     adata_wt = man_feat_adata[man_feat_adata.obs['tau_status'] == 'WT']
     adata_wt_wtc11_sc_feat = adata_wt[adata_wt.obs['donor_id'] == 'WTC11']
@@ -240,7 +258,7 @@ def main():
                         guide_id_col='guide_id',
                         well_id_col='loc_id',
                         non_targeting_label='non-targeting',
-                        train_fraction=0.6,
+                        train_fraction=0.5,
                         plot_curves=False)
     wt_patient_tvn_feat_auroc = compute_auroc_for_guides(
                             adata_wt_patient_sc_tvn_feat,
@@ -248,7 +266,7 @@ def main():
                             guide_id_col='guide_id',
                             well_id_col='loc_id',
                             non_targeting_label='non-targeting',
-                            train_fraction=0.6,
+                            train_fraction=0.5,
                             plot_curves=False)
     
     adata_wt_wtc11_sc_tvn_embed.obs['loc_id'] = adata_wt_wtc11_sc_tvn_embed.obs['aggregate_by'].apply(lambda x: '_'.join(x.split('_')[:2])) + '_' + adata_wt_wtc11_sc_tvn_embed.obs['well_id'].astype('str')
@@ -259,14 +277,14 @@ def main():
                         guide_id_col='guide_id',
                         well_id_col='loc_id',
                         non_targeting_label='non-targeting',
-                        train_fraction=0.6,
+                        train_fraction=0.5,
                         plot_curves=False)
     wt_patient_tvn_embed_auroc = compute_auroc_for_guides(adata_wt_patient_sc_tvn_embed,
                         gene_id_col='gene_id',
                         guide_id_col='guide_id',
                         well_id_col='loc_id',
                         non_targeting_label='non-targeting',
-                        train_fraction=0.6,
+                        train_fraction=0.5,
                         plot_curves=False)
     
     # converting from UIDs to unique integer values for plotting
@@ -297,13 +315,14 @@ def main():
     plt.figure(figsize=(8, 4))
     wt_wtc11_tvn_feat_auroc = wt_wtc11_tvn_feat_auroc.sort_values(by='auroc', ascending=False)
     sns.barplot(x='guide_id_new', y='auroc', data=wt_wtc11_tvn_feat_auroc, color=wtc11_wt_color, alpha=0.5)
+    sns.swarmplot(x='guide_id_new', y='auroc', data=wt_wtc11_tvn_feat_auroc, color='k', alpha=1)
     plt.xlabel('Guide ID')
     plt.ylabel('AUROC Binary Classifier')
     plt.xticks(rotation=90)
     plt.title('WTC11 Cell Line (Manual Features)')
     # Plotting horizontal line
-    plt.axhline(y=0.7, color='r', linestyle='--')
-    plt.axhline(y=0.55, color='k')
+    plt.axhline(y=0.8, color='r', linestyle='--')
+    plt.axhline(y=0.5, color='k')
     plt.ylim(0, 1)
     plt.tight_layout()
     plt.savefig('guide_auroc_wt_wtc11_line_engineered_features.pdf', dpi=800)
@@ -312,13 +331,14 @@ def main():
     plt.figure(figsize=(8, 4))
     wt_patient_tvn_feat_auroc = wt_patient_tvn_feat_auroc.sort_values(by='auroc', ascending=False)
     sns.barplot(x='guide_id_new', y='auroc', data=wt_patient_tvn_feat_auroc, color=patient_wt_color, alpha=0.5)
+    sns.swarmplot(x='guide_id_new', y='auroc', data=wt_patient_tvn_feat_auroc, color='k', alpha=1)
     plt.xlabel('Guide ID')
     plt.ylabel('AUROC Binary Classifier')
     plt.xticks(rotation=90)
     plt.title('Patient Line Cell Line (Manual Features)')
     # Plotting horizontal line
-    plt.axhline(y=0.7, color='r', linestyle='--')
-    plt.axhline(y=0.55, color='k')
+    plt.axhline(y=0.8, color='r', linestyle='--')
+    plt.axhline(y=0.5, color='k')
     plt.ylim(0, 1)
     plt.tight_layout()
     plt.savefig('guide_auroc_wt_patient_line_engineered_features.pdf', dpi=800)
@@ -327,13 +347,14 @@ def main():
     plt.figure(figsize=(8, 4))
     wt_wtc11_tvn_embed_auroc = wt_wtc11_tvn_embed_auroc.sort_values(by='auroc', ascending=False)
     sns.barplot(x='guide_id_new', y='auroc', data=wt_wtc11_tvn_embed_auroc, color=wtc11_wt_color, alpha=1)
+    sns.swarmplot(x='guide_id_new', y='auroc', data=wt_wtc11_tvn_embed_auroc, color='k', alpha=1)
     plt.xlabel('Guide ID')
     plt.ylabel('AUROC Binary Classifier')
     plt.xticks(rotation=90)
     plt.title('WTC11 Cell Line (Plexus Embeddings)')
     # Plotting horizontal line
-    plt.axhline(y=0.7, color='r', linestyle='--')
-    plt.axhline(y=0.55, color='k')
+    plt.axhline(y=0.8, color='r', linestyle='--')
+    plt.axhline(y=0.5, color='k')
     plt.ylim(0, 1)
     plt.tight_layout()
     plt.savefig('guide_auroc_wt_wtc11_line_embeddings.pdf', dpi=800)
@@ -342,13 +363,14 @@ def main():
     plt.figure(figsize=(8, 4))
     wt_patient_tvn_embed_auroc = wt_patient_tvn_embed_auroc.sort_values(by='auroc', ascending=False)
     sns.barplot(x='guide_id_new', y='auroc', data=wt_patient_tvn_embed_auroc, color=patient_wt_color, alpha=1)
+    sns.swarmplot(x='guide_id_new', y='auroc', data=wt_patient_tvn_embed_auroc, color='k', alpha=1)
     plt.xlabel('Guide ID')
     plt.ylabel('AUROC Binary Classifier')
     plt.xticks(rotation=90)
     plt.title('Patient Line Cell Line (Plexus Embeddings)')
     # Plotting horizontal line
-    plt.axhline(y=0.7, color='r', linestyle='--')
-    plt.axhline(y=0.55, color='k')
+    plt.axhline(y=0.8, color='r', linestyle='--')
+    plt.axhline(y=0.5, color='k')
     plt.ylim(0, 1)
     plt.tight_layout()
     plt.savefig('guide_auroc_wt_patient_line_embeddings.pdf', dpi=800)
