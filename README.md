@@ -1,4 +1,6 @@
 # Plexus
+[![DOI](https://zenodo.org/badge/909127552.svg)](https://doi.org/10.5281/zenodo.15811301)
+
 **Overview**: Network-Aware Masked Autoencoders for Neuronal Activity Phenotyping
 
 Note: [plexus-extract](https://github.com/pgrosjean/plexus-extract) and [plexus-simulate](https://github.com/pgrosjean/plexus-simulate) are associated repositories used for pre-processing and simulating data, respectively.
