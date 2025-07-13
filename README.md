@@ -24,9 +24,9 @@ Models were all trained using python 3.10 with CUDA 12.1
 
 # Downloading the data archive
 To train the models you must first download the data archive from Zenodo
-Zenodo DOI (10.5281/zenodo.14714574)
+Zenodo DOI (10.5281/zenodo.15809433)
 ```bash
-wget https://zenodo.org/records/14714574/files/plexus_data_archive.zip
+wget https://zenodo.org/records/15809433/files/plexus_data_archive.zip
 unzip plexus_data_archive.zip
 ```
 **Note: this data archive also includes .h5ad files containing both the manual features and the plexus embeddings.**
